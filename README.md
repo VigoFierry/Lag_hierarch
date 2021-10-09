@@ -5,5 +5,13 @@ available at arXiv:
 
 dependencies: Voro++ (http://math.lbl.gov/voro++/ and https://github.com/chr1shr/voro) is used for computations of Laguerre tessellation
 
+the capabilities of the library are demonstrated on several examples:
+pipp_sim.cpp
+pipp_estim.cpp
+rad_sim.cpp
+rad_estim.cpp
+random_con.cpp
+statistics.cpp
+
 
 ** the code still undergoes extensive changes **
