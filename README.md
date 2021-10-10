@@ -17,9 +17,8 @@ rad_sim.cpp
 
 rad_estim.cpp
 
-random_con.cpp
+Source_Lag_tess.cpp - shows how to compute a Laguerre tessellation for a given list of generators using Voro++ 
 
-statistics.cpp
 
 
 
