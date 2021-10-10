@@ -27,7 +27,7 @@ int main()
 	// Voro++ class pre_container_poly serves for an initial import of a data		
 	pre_container_poly pconp(win.lx, win.ux, win.ly, win.uy, win.lz, win.uz, periodic, periodic, periodic);
 
-	pconp.import("../data/datacon_Lag.txt");
+	pconp.import("datacon_Lag.txt");
 	// the each line of the text file representing the data is expected to be 
 	//		ID x y z radius
 	// and represents a single generator of possibly nonempty Laguerre cell (ID ... id of the generator; x y z ... spatial position of the generator; radius ... radius of the generator)
