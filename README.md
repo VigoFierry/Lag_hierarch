@@ -4,7 +4,7 @@ The model is introduced in paper "Fitting three-dimensional Laguerre tessellatio
 available at arXiv:
 
 dependencies: 
-  Voro++ (http://math.lbl.gov/voro++/ and https://github.com/chr1shr/voro) is used for computations of Laguerre tessellation
+  Voro++ (http://math.lbl.gov/voro++/ and https://github.com/chr1shr/voro) is used for computations of Laguerre tessellation;
   Eigen
   
 library files: Header.h data_creator.cpp dens_ener.cpp feasibility.cpp helping_fcs.cpp LAG_ORI_recompute.cpp LAG_recompute.cpp numeric.cpp orientations.cpp pipp.cpp prob_distributions.cpp radii.cpp statistics.cpp 
