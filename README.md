@@ -13,7 +13,7 @@ the capabilities of the library are demonstrated on several examples:
 
 Source_Lag_tess.cpp - shows how to compute a Laguerre tessellation for a given list of generators using Voro++ 
 
-pipp_sim.cpp
+Source_PP_sim.cpp - simulation of a 3D point pattern
 
 pipp_estim.cpp
 
