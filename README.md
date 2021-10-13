@@ -15,11 +15,11 @@ Source_Lag_tess.cpp - shows how to compute a Laguerre tessellation for a given l
 
 Source_PP_sim.cpp - simulation of a 3D point pattern
 
-pipp_estim.cpp
+Source_PP_estim.cpp - estimation of parameters of a given point process model
 
-rad_sim.cpp
+Source_rad_sim.cpp - simulation of radii conditioned on a point pattern
 
-rad_estim.cpp
+Source_rad_estim.cpp - estimation of parameters of a radii model
 
 
 
