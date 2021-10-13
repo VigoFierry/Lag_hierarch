@@ -72,7 +72,7 @@ int main()
 		std::cout << Rin[i] << " ";
 	}
 	std::cout << " \n";
-	// indicate whether the model is hardcore or not:
+	// indicate whether the model is hardcore or not (hR == 0 means no hardcore restriction, hR > 0 specifies the value of the hardcore parameter):
 	double hR = 0;
 	std::cout << "hardcore model: ";
 	if (hR > 0) { std::cout << "yes " << hR; }
