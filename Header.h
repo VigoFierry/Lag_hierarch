@@ -1,9 +1,13 @@
+//#define __STDCPP_WANT_MATH_SPEC_FUNCS__ 1
+
 #pragma once
 
 #include <iostream>
 #include <fstream>
 #include <random>  // package for generating random variables - http://en.cppreference.com/w/cpp/numeric/random or http://itscompiling.eu/2016/04/11/generating-random-numbers-cpp/
 #include <vector>  // vectors
+#include <cmath>
+#include<iomanip>
 
 #include <cstdio>  // work with files
 #include <math.h>  // math functions: tan, pow, sqrt, ...
@@ -20,7 +24,7 @@
 
 
 // LBFGS++ should be included in directories in case of using LBFGS solver
-//#include <LBFGS.h>  // LBFGS optimalization algorithm, https://yixuan.cos.name/LBFGSpp/
+#include <LBFGS.h>  // LBFGS optimalization algorithm, https://yixuan.cos.name/LBFGSpp/
 
 #include <chrono>
 using namespace std::chrono;
@@ -40,7 +44,7 @@ using namespace std::chrono;
 
 #define eps 0.00000000005
 
-#define max_it 200
+#define max_it 100
 
 #define prec 10000000000000000000 // set 1 for max precission; 1 < ... < 10000000000000000000 = max
 // log(max) = 43.7491
@@ -68,6 +72,7 @@ int uniform_int(int a, int b);
 double normal(double mu, double sigma);
 double poisson(int);
 double gamma(double alfa, double beta);
+double beta(double alfa, double beta);
 double triangle(double a, double b, double c);
 double exponential(double lambda);
 void sphere_uniform(double &s1, double &s2, double &s3);
@@ -121,7 +126,10 @@ void write_container_view(voro::container_poly &con, const char* con_out = "data
 // ^ -- do not use ascending numbering for ids, otherwise the same as write_container
 void transform(const char* con_in, const char* con_out = "datacon.txt");
 void write_image(voro::container_poly &con, int xm, int ym, int zm, const char* im_out = "data_image.txt");
-// ^ -- creates voxel image of the tessellation (to the voxel grid are asigned ids of cells)
+// ^ -- writes voxel image of the tessellation (to the voxel grid are asigned ids of cells)
+void create_image(voro::container_poly &con, std::vector<std::vector<std::vector<int>>> &im);
+void create_bw_image(std::vector<std::vector<std::vector<int>>> &im, std::vector<std::vector<std::vector<int>>> &bwim);
+void write_image(std::vector<std::vector<std::vector<int>>> &im, const char* im_out = "data_image.txt");
 
 
 // helping_fcs //
@@ -412,7 +420,10 @@ public:
 	//		case 2: val_aft = abs(cc.volume() - dc.volume());		// difference in neighbour volumes
 	// specification of the reconstruction type (for each char)
 	std::vector<vector5> recotype; // default = empty
-	// number of potentials (it is given by (ch1+ch2 * I{recotype==1}) )
+	// specification of radii distribution
+	std::string drad; // default = "none"
+	//		beta ... beta distribution, two parameters (alfa, beta)
+	// number of potentials ()
 	int npart; // default = 0
 	// parameters
 	std::vector<double> theta; // default = empty
@@ -446,7 +457,7 @@ public:
 	std::vector<int> empty;
 
 	con_info() { // default setting
-		tp_bef = 1; tp_aft = 1; tpair_bef = 1; tpair_aft = 1; ch1 = 0; ch2 = 0; chars.clear(); recotype.clear(); npart = 0; win = window(0, 1, 0, 1, 0, 1, 0, 0.2);
+		tp_bef = 1; tp_aft = 1; tpair_bef = 1; tpair_aft = 1; ch1 = 0; ch2 = 0; chars.clear(); recotype.clear(); drad.assign("none"); npart = 0; win = window(0, 1, 0, 1, 0, 1, 0, 0.2);
 		hard = { 0,0,0,0,0,0 }; hp = 0;  hpar.clear(); theta.clear(); zet = 1; sigma = pow(0.015, 2)*pow((win.ux - win.lx)*(win.uy - win.ly)*(win.uz - win.lz), 0.33333333333);
 		mean.clear(); mean_bef.clear(); mean_aft.clear(); var.clear(); var_bef.clear(); var_aft.clear(); gsum.clear(); gsum_bef.clear(); gsum_aft.clear(); hists.clear(); hists_bef.clear(); hists_aft.clear(); empty.clear();
 		lagemp = 0; fixnop = 0;
@@ -629,6 +640,7 @@ public:
 	clPLrad(voro::container_poly &con, voro::container_poly &con_copy, int nap, con_info &info);
 	long double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad); // x.sixe = d = b.size
 	bool operator()(const Eigen::VectorXd &x, Eigen::VectorXd &f, Eigen::MatrixXd &fprime); // x.size = d = b.size
+	double clPLrad::score(con_info &info, std::vector<double> &pl_score);
 	//void operator()(std::vector<double> &mean);
 	void mean(std::vector<double> &mea);
 	void visualize(int n, int m = 0);
@@ -638,6 +650,7 @@ public:
 	double lprec;
 };
 // ^ -- contrast log pseudolikelihood for model of radii
+
 
 
 void grid_values(std::vector<int> &va, std::vector<double> &vb, std::vector<double> &vc, int y, std::vector<double> &th_grid);
@@ -657,14 +670,14 @@ int NRm(Foo &F, Eigen::VectorXd &x)
 
 	int n = x.size();
 	int i, j = 0;
-	double acc, e = 0.000001; // accuracy  00
+	double acc, e = 0.0001; // accuracy  00
 
 	//double init = 0.3;
 	std::vector<double> ime;
 	F.mean(ime);
-	//std::cout <<  " ime: ";
-	//for (i = 0; i < size(ime); i++) { std::cout << ime[i] << " "; }
-	//std::cout << " \n";
+	std::cout <<  " ime: ";
+	for (i = 0; i < ime.size(); i++) { std::cout << ime[i] << " "; }
+	std::cout << " \n";
 	//init = ime[0];
 
 	F.lprec = 0;
@@ -683,18 +696,18 @@ int NRm(Foo &F, Eigen::VectorXd &x)
 		//fx = f(x, va, vb, vc, y);            //simplifying f(x)to fx
 		//fx1 = fprime(x, va, vb, vc, y);          //simplifying fprime(x) to fx1
 		dx = fxprime.colPivHouseholderQr().solve(-fx);
-		dx = 0.1*dx;
+		dx = 0.000000000001*dx;
 		x1 = x + dx;
 		//for (i = 0; i < n; i++) { x1[i] = x[i] + dx[i]; }
 		//x1 = x - (fx / fx1);            //calculate x{1} from x, fx and fx1
-		///std::cout << "x " << x << " x1     " << x1 << " fabs           " << fabs(x1[0] - x[0]) << "\n";
+		std::cout << "x " << x << " x1     " << x1 << " fabs           " << fabs(x1[0] - x[0]) << "\n";
 		acc = 0;
-		///std::cout << "lprec " << F.lprec << "\n";
+		std::cout << "lprec " << F.lprec << "\n";
 		for (i = 0; i < n; i++) {
 			F.lprec = F.lprec + (x1[i] - x[i])*ime[i];
 		}
 		for (i = 0; i < n; i++) { acc = acc + fabs(x1[i] - x[i]); }
-		///std::cout << "acc " << acc << "\n";
+		std::cout << "acc " << acc << "\n";
 		j++;
 		if (j > max_it) { acc = 0; }
 	} while (acc >= e);            //if |x{i+1}-x{i}| remains greater than the desired accuracy, continue the loop
@@ -767,3 +780,22 @@ double LAG_ori_V2(voro::container_poly &con, voro::container_poly &newcon, orien
 double ori_dis(voro::container_poly &con, orientation &ori, double(&symQ)[24][4]);
 double min_mis(voro::container_poly &con, orientation &ori, double(&symQ)[24][4]);
 
+
+
+
+// subcells
+// - functions for computing a subdivision of Laguerre tessellation
+double closest_point_on_line(point a, point b, point p);
+
+typedef struct { double mid, sw; } board;
+
+double board_dist(board boa1, board boa2);
+bool board_overlap(board boa, board n_boa);
+board board_union(board boa, board n_boa); 
+void compute_line_segments(voro::container_poly &conp, std::vector<point> &normals, std::vector<double> &a, std::vector<double> &b, std::vector<double> &cvol);
+void testing_boards(voro::container_poly &conp, std::vector<point> &normals, std::vector<double> &a, std::vector<double> &b, std::vector<double> &tbvol);
+void create_boards(voro::container_poly &conp, std::vector<point> &normals, std::vector<double> &vfs, double min_wc, bool hard, double hmin, std::vector<double> &sws, std::vector<double> &a, std::vector<double> &b, std::vector<double> &cvol, std::vector<std::vector<board>> &boards, std::vector<std::vector<double>> &bvols);
+
+bool read_ns(const char* fname, std::vector<point> &vec);
+bool read_vfs(const char* fname, std::vector<double> &vec);
+void create_image_sub(voro::container_poly &con, std::vector<std::vector<std::vector<int>>> &im, std::vector<point> &normals, std::vector<std::vector<board>> &boards);

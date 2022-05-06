@@ -328,7 +328,7 @@ void transform(const char* con_in, const char* con_out) {
 }
 
 
-// fc write_image creates a voxelized image (cell id is assigned to each voxel)
+// fc write_image writes a voxelized image into a file (cell id is assigned to each voxel)
 void write_image(voro::container_poly &con,int xm,int ym,int zm, const char* im_out) {
 	int i, j, k;
 
@@ -346,16 +346,16 @@ void write_image(voro::container_poly &con,int xm,int ym,int zm, const char* im_
 
 	double x, y, z;
 
-	for (i = -1; i < xm+1; i++) {
+	for (i = -1; i < zm+1; i++) {
 		for (j = -1; j < ym+1; j++) {
-			for (k = -1; k < zm+1; k++) {
+			for (k = -1; k < xm+1; k++) {
 
-				x = lx / 2 + k * lx;  // switch i&k a xm&zm to reverse order
-				y = ly / 2 + j * ly;
-				z = lz / 2 + i * lz;
+				x = con.ax + lx / 2 + k * lx;  // switch i&k a xm&zm to reverse order
+				y = con.ay + ly / 2 + j * ly;
+				z = con.az + lz / 2 + i * lz;
 
-				if (i == -1 || j == -1 || k == -1 || i == xm || j == ym || k == zm) {
-					//fprintf(f, "%g %g %g %d \n", x, y, z, -1); // uncomment to write boundary 
+				if (i == -1 || j == -1 || k == -1 || i == zm || j == ym || k == xm) {
+					//fprintf(f, "%g %g %g %d \n", x, y, z, 0); // uncomment to write boundary 
 				}
 				else {
 
@@ -373,6 +373,376 @@ void write_image(voro::container_poly &con,int xm,int ym,int zm, const char* im_
 
 }
 
+// fc crete_image creates a voxelized image (cell id is assigned to each voxel)
+void create_image(voro::container_poly &con, std::vector<std::vector<std::vector<int>>> &im) 
+{
+	//	[in]		con		container with stored generators
+	//	[in,out]	im		3D vector representing voxels of the image
+
+	int i, j, k, id;
+	double cx, cy, cz;
+
+	int zm = im.size();
+	int ym = im[0].size();
+	int xm = im[0][0].size();
+	
+	double lx = (con.bx - con.ax) / xm;
+	double ly = (con.by - con.ay) / ym;
+	double lz = (con.bz - con.az) / zm;
+
+	double x, y, z;
+
+	for (i = 0; i < zm ; i++) {
+		for (j = 0; j < ym; j++) {
+			for (k = 0; k < xm; k++) {
+
+				x = con.ax + lx / 2 + k * lx;
+				y = con.ay + ly / 2 + j * ly;
+				z = con.az + lz / 2 + i * lz;
+
+				if (con.find_voronoi_cell(x, y, z, cx, cy, cz, id)) {
+
+					im[i][j][k] = id;
+
+				}
+				else { std::cout << "ERROR (create_image): cell not found \n"; }
+				
+			}
+		}
+	}
+	return;
+}
+
+// fc crete_image creates a voxelized image (cell id is assigned to each voxel)
+void create_bw_image(std::vector<std::vector<std::vector<int>>> &im, std::vector<std::vector<std::vector<int>>> &bwim)
+{
+	//	[in]	im		3D vector representing voxels of the image
+	//	[out]	bwim	3D vector representing voxels of the black and white image
+
+	int i, j, k, id;
+	bool white;
+
+	int zm = im.size();
+	int ym = im[0].size();
+	int xm = im[0][0].size();
+
+	bwim.resize(zm - 2);
+	for (i = 0; i < zm - 2; i++) {
+		bwim[i].resize(ym -2);
+	}
+	for (i = 0; i < zm - 2; i++) {
+		for (j = 0; j < ym - 2; j++) {
+			bwim[i][j].resize(xm - 2);
+		}
+	}
+
+	/*
+	i = 0;
+	for (j = 1; j < ym - 1; j++) {
+		for (k = 1; k < xm - 1; k++) {
+
+			white = true;
+			id = im[i][j][k];
+
+			// it is enough to check the corners
+			if (im[i + 1][j - 1][k - 1] != id) { white = false; }
+			else {
+				if (im[i + 1][j - 1][k + 1] != id) { white = false; }
+				else {
+					if (im[i + 1][j + 1][k - 1] != id) { white = false; }
+					else {
+						if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+					}
+				}
+			}
+
+			if (white) { bwim[i][j][k] = 1; }
+			else { bwim[i][j][k] = 0; }
+		}
+	}
+	i = zm - 1;
+	for (j = 1; j < ym - 1; j++) {
+		for (k = 1; k < xm - 1; k++) {
+
+			white = true;
+			id = im[i][j][k];
+
+			// it is enough to check the corners
+			if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+			else {
+				if (im[i - 1][j - 1][k + 1] != id) { white = false; }
+				else {
+					if (im[i - 1][j + 1][k - 1] != id) { white = false; }
+					else {
+						if (im[i - 1][j + 1][k + 1] != id) { white = false; }
+					}
+				}
+			}
+
+			if (white) { bwim[i][j][k] = 1; }
+			else { bwim[i][j][k] = 0; }
+		}
+	}
+	j = 0;
+	for (i = 1; i < zm - 1; i++) {
+		for (k = 1; k < xm - 1; k++) {
+
+			white = true;
+			id = im[i][j][k];
+
+			// it is enough to check the corners
+			if (im[i - 1][j + 1][k - 1] != id) { white = false; }
+			else {
+				if (im[i - 1][j + 1][k + 1] != id) { white = false; }
+				else {
+					if (im[i + 1][j + 1][k - 1] != id) { white = false; }
+					else {
+						if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+					}
+				}
+			}
+
+
+			if (white) { bwim[i][j][k] = 1; }
+			else { bwim[i][j][k] = 0; }
+		}
+	}
+	j = ym - 1;
+	for (i = 1; i < zm - 1; i++) {
+		for (k = 1; k < xm - 1; k++) {
+
+			white = true;
+			id = im[i][j][k];
+
+			// it is enough to check the corners
+			if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+			else {
+				if (im[i - 1][j - 1][k + 1] != id) { white = false; }
+				else {
+					if (im[i + 1][j - 1][k - 1] != id) { white = false; }
+					else {
+						if (im[i + 1][j - 1][k + 1] != id) { white = false; }
+					}
+				}
+			}
+
+			if (white) { bwim[i][j][k] = 1; }
+			else { bwim[i][j][k] = 0; }
+		}
+	}
+	k = 0;
+	for (i = 1; i < zm - 1; i++) {
+		for (j = 1; j < ym - 1; j++) {
+
+			white = true;
+			id = im[i][j][k];
+
+			// it is enough to check the corners
+
+			if (im[i - 1][j - 1][k + 1] != id) { white = false; }
+			else {
+				if (im[i - 1][j + 1][k + 1] != id) { white = false; }
+				else {
+					if (im[i + 1][j - 1][k + 1] != id) { white = false; }
+					else {
+						if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+					}
+				}
+			}
+
+			if (white) { bwim[i][j][k] = 1; }
+			else { bwim[i][j][k] = 0; }
+		}
+	}
+	k = xm - 1;
+	for (i = 1; i < zm - 1; i++) {
+		for (j = 1; j < ym - 1; j++) {
+
+			white = true;
+			id = im[i][j][k];
+
+			// it is enough to check the corners
+			if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+			else {
+				if (im[i - 1][j + 1][k - 1] != id) { white = false; }
+				else {
+					if (im[i + 1][j - 1][k - 1] != id) { white = false; }
+					else {
+						if (im[i + 1][j + 1][k - 1] != id) { white = false; }
+					}
+				}
+			}
+
+			if (white) { bwim[i][j][k] = 1; }
+			else { bwim[i][j][k] = 0; }
+		}
+	}
+	i = 0; j = 0;
+	for (k = 1; k < xm - 1; k++) {
+
+		white = true;
+		id = im[i][j][k];
+
+		// it is enough to check the corners
+
+		if (im[i + 1][j + 1][k - 1] != id) { white = false; }
+		else {
+			if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+		}
+
+		if (white) { bwim[i][j][k] = 1; }
+		else { bwim[i][j][k] = 0; }
+	}
+	i = zm - 1; j = ym - 1;
+	for (k = 1; k < xm - 1; k++) {
+
+		white = true;
+		id = im[i][j][k];
+
+		// it is enough to check the corners
+		if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+		else {
+			if (im[i - 1][j - 1][k + 1] != id) { white = false; }
+		}
+
+		if (white) { bwim[i][j][k] = 1; }
+		else { bwim[i][j][k] = 0; }
+	}
+	i = 0; k = 0;	
+	for (j = 1; j < ym - 1; j++) {
+
+		white = true;
+		id = im[i][j][k];
+
+		// it is enough to check the corners
+		if (im[i + 1][j - 1][k + 1] != id) { white = false; }
+		else {
+			if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+
+		}
+
+		if (white) { bwim[i][j][k] = 1; }
+		else { bwim[i][j][k] = 0; }
+	}
+	i = zm - 1; k = xm - 1;
+	for (j = 1; j < ym - 1; j++) {
+
+		white = true;
+		id = im[i][j][k];
+
+		// it is enough to check the corners
+		if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+		else {
+			if (im[i - 1][j + 1][k - 1] != id) { white = false; }
+		}
+
+		if (white) { bwim[i][j][k] = 1; }
+		else { bwim[i][j][k] = 0; }
+	}
+	j = 0; k = 0;
+	for (i = 1; i < zm - 1; i++) {
+
+		white = true;
+		id = im[i][j][k];
+
+		// it is enough to check the corners
+		if (im[i - 1][j + 1][k + 1] != id) { white = false; }
+		else {
+			if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+		}
+
+		if (white) { bwim[i][j][k] = 1; }
+		else { bwim[i][j][k] = 0; }
+	}
+	j = ym - 1; k = xm - 1;
+	for (i = 1; i < zm - 1; i++) {
+
+		white = true;
+		id = im[i][j][k];
+
+		// it is enough to check the corners
+		if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+		else {
+			if (im[i + 1][j - 1][k - 1] != id) { white = false; }
+		}
+
+		if (white) { bwim[i][j][k] = 1; }
+		else { bwim[i][j][k] = 0; }
+	}
+	i = 0; j = 0; k = 0;
+	if (im[i + 1][j + 1][k + 1] != id) { bwim[i][j][k] = 0; } else { bwim[i][j][k] = 1; }
+	i = zm-1; j = ym-1; k = xm-1;
+	if (im[i - 1][j - 1][k - 1] != id) { bwim[i][j][k] = 0; } else { bwim[i][j][k] = 1; }
+	*/
+
+	for (i = 1; i < zm-1; i++) {
+		for (j = 1; j < ym-1; j++) {
+			for (k = 1; k < xm-1; k++) {
+
+				white = true;
+				id = im[i][j][k];
+
+				// it is enough to check the corners
+				if (im[i - 1][j - 1][k - 1] != id) { white = false; }
+				else {
+					if (im[i - 1][j - 1][k + 1] != id) { white = false; }
+					else {
+						if (im[i - 1][j + 1][k - 1] != id) { white = false; }
+						else {
+							if (im[i - 1][j + 1][k + 1] != id) { white = false; }
+							else {
+								if (im[i + 1][j - 1][k - 1] != id) { white = false; }
+								else {
+									if (im[i + 1][j - 1][k + 1] != id) { white = false; }
+									else {
+										if (im[i + 1][j + 1][k - 1] != id) { white = false; }
+										else {
+											if (im[i + 1][j + 1][k + 1] != id) { white = false; }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (white) { bwim[i-1][j-1][k-1] = 1; }
+				else { bwim[i-1][j-1][k-1] = 0; }
+			}
+		}
+	}
+	return;
+}
+
+// fc write_image writes a voxelized image into a file (cell id is assigned to each voxel)
+void write_image(std::vector<std::vector<std::vector<int>>> &im, const char* im_out) 
+{
+	int i, j, k;
+	int zm = im.size();
+	int ym = im[0].size();
+	int xm = im[0][0].size();
+
+	FILE *f;
+	f = fopen(im_out, "w");
+	if (f == NULL) { std::cout << "ERROR (write_image): CANNOT write container image \n"; }
+
+	for (i = -1; i < zm + 1; i++) {
+		for (j = -1; j < ym + 1; j++) {
+			for (k = -1; k < xm + 1; k++) {
+
+
+				if (i == -1 || j == -1 || k == -1 || i == zm || j == ym || k == xm) {
+					//fprintf(f, "%g %g %g %d \n", x, y, z, 0); // uncomment to write boundary 
+				}
+				else {					
+					fprintf(f, "%d \n", im[i][j][k] );					
+				}
+			}
+		}
+	}
+	fclose(f);
+	return;
+}
 
 // fc write_image creates a voxelized image (cell id and orientation is assigned to each voxel)
 void write_image(voro::container_poly &con, orientation &ori, int xm, int ym, int zm, const char* im_out) {
@@ -393,16 +763,16 @@ void write_image(voro::container_poly &con, orientation &ori, int xm, int ym, in
 
 	double x, y, z;
 
-	for (i = -1; i < xm + 1; i++) {
+	for (i = -1; i < zm + 1; i++) {
 		for (j = -1; j < ym + 1; j++) {
-			for (k = -1; k < zm + 1; k++) {
+			for (k = -1; k < xm + 1; k++) {
 
-				x = lx / 2 + k * lx;  // switch i&k a xm&zm to reverse order
-				y = ly / 2 + j * ly;
-				z = lz / 2 + i * lz;
+				x = con.ax + lx / 2 + k * lx;  // switch i&k a xm&zm to reverse order
+				y = con.ay + ly / 2 + j * ly;
+				z = con.az + lz / 2 + i * lz;
 
-				if (i == -1 || j == -1 || k == -1 || i == xm || j == ym || k == zm) {
-					//fprintf(f, "%g %g %g %d \n", x, y, z, -1); // uncomment to write boundary 
+				if (i == -1 || j == -1 || k == -1 || i == zm || j == ym || k == xm) {
+					//fprintf(f, "%g %g %g %d \n", x, y, z, 0); // uncomment to write boundary 
 				}
 				else {
 
@@ -463,16 +833,16 @@ void write_image_with_map(voro::container_poly &con, orientation &ori, int xm, i
 
 	double x, y, z;
 
-	for (i = -1; i < xm + 1; i++) {
+	for (i = -1; i < zm + 1; i++) {
 		for (j = -1; j < ym + 1; j++) {
-			for (k = -1; k < zm + 1; k++) {
+			for (k = -1; k < xm + 1; k++) {
 
-				x = lx / 2 + k * lx;  // switch i&k a xm&zm to reverse order
-				y = ly / 2 + j * ly;
-				z = lz / 2 + i * lz;
+				x = con.ax + lx / 2 + k * lx;  // switch i&k a xm&zm to reverse order
+				y = con.ay + ly / 2 + j * ly;
+				z = con.az + lz / 2 + i * lz;
 
-				if (i == -1 || j == -1 || k == -1 || i == xm || j == ym || k == zm) {
-					//fprintf(f, "%g %g %g %d \n", x, y, z, -1); // uncomment to write boundary 
+				if (i == -1 || j == -1 || k == -1 || i == zm || j == ym || k == xm) {
+					//fprintf(f, "%g %g %g %d \n", x, y, z, 0); // uncomment to write boundary 
 				}
 				else {
 
