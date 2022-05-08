@@ -479,5 +479,5 @@ void board_stats(voro::container_poly &conp, std::vector<std::vector<board>> &bo
 			}
 		}
 	}
-
+	fclose(f);
 }
