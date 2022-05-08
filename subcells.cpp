@@ -420,3 +420,64 @@ void create_image_sub(voro::container_poly &con, std::vector<std::vector<std::ve
 	return;
 }
 
+// fc board_stats computes geometric characteristics of boards and writes them into a file
+void board_stats(voro::container_poly &conp, std::vector<std::vector<board>> &boards, std::vector<point> &ns, std::vector<double> &a, const char* con_out)
+{
+	
+	// Geometric characteristics of boards ---------------------------------------------------------------------------------------------
+
+	int i, j, k;
+	double vol;
+	voro::voronoicell_neighbor c, d;
+
+	char outname[100];
+	sprintf(outname, "boards_stats_%s.txt", con_out);
+	FILE *f;
+	f = fopen(outname, "w");
+
+	if (f == NULL) { std::cout << "ERROR cannot write into " << outname << " \n"; }
+
+	fprintf(f, "cell id, midpoint, midpoint in 3D coordinate system (x,y,z), semi-width, volume, volume fraction, surface area, total edge length, number of faces, number of edges, sphericity, max radius squared  \n");
+
+	for (j = 0; j < conp.nxyz; j++) { // loop over boxes
+		for (i = 0; i < conp.co[j]; i++) { // loop over generators in considered box
+
+			//grain = conp.compute_cell(c, j, i);
+			if (conp.compute_cell(d, j, i)) {
+				vol = d.volume();
+				// loop over the boards within the cell `d'
+				for (k = 0; k < boards[conp.id[j][i] - 1].size(); k++) {
+					c = d;
+
+					// create the board from the cell by two cuts
+					c.plane(ns[conp.id[j][i] - 1].x, ns[conp.id[j][i] - 1].y, ns[conp.id[j][i] - 1].z, 2 * (boards[conp.id[j][i] - 1][k].mid + boards[conp.id[j][i] - 1][k].sw));
+					//c.plane(conp.p[j][3 * i] + ns[conp.id[j][i] - 1].x, conp.p[j][3 * i + 1] + ns[conp.id[j][i] - 1].y, conp.p[j][3 * i + 2] + ns[conp.id[j][i] - 1].z, 2 * (new_board.mid + new_board.sw));
+					if (boards[conp.id[j][i] - 1][k].mid - boards[conp.id[j][i] - 1][k].sw < a[conp.id[j][i] - 1]) {}
+					else {
+						c.plane(-ns[conp.id[j][i] - 1].x, -ns[conp.id[j][i] - 1].y, -ns[conp.id[j][i] - 1].z, -2 * (boards[conp.id[j][i] - 1][k].mid - boards[conp.id[j][i] - 1][k].sw));
+						//c.plane(conp.p[j][3 * i] - ns[conp.id[j][i] - 1].x, conp.p[j][3 * i + 1] - ns[conp.id[j][i] - 1].y, conp.p[j][3 * i + 2] - ns[conp.id[j][i] - 1].z, -2 * (new_board.mid + new_board.sw));
+					}
+
+					fprintf(f, "%d %g %g %g %g %g %g %g %g %g %d %d %g %g \n",
+						conp.id[j][i],				// ID of cell
+						boards[conp.id[j][i] - 1][k].mid,	// midpoint
+						conp.p[j][3 * i] + boards[conp.id[j][i] - 1][k].mid*ns[conp.id[j][i] - 1].x,		// midpoint 3D coordinates
+						conp.p[j][3 * i + 1] + boards[conp.id[j][i] - 1][k].mid*ns[conp.id[j][i] - 1].y, 
+						conp.p[j][3 * i + 2] + boards[conp.id[j][i] - 1][k].mid*ns[conp.id[j][i] - 1].z, 
+						boards[conp.id[j][i] - 1][k].sw,	// semi-width
+						c.volume(),					// volume
+						c.volume()/vol,				// volume fraction
+						c.surface_area(),			// surface area
+						c.total_edge_distance(),	// total edge length
+						c.number_of_faces(),		//c.number_of_faces(),		// number of faces = number of neighbors
+						c.number_of_edges(),		// number of edges
+						// number of vertices = number of edges - number of faces + 2
+						sphericity(c),
+						c.max_radius_squared()		// max radius squared
+					);
+				}
+			}
+		}
+	}
+
+}

@@ -640,7 +640,7 @@ public:
 	clPLrad(voro::container_poly &con, voro::container_poly &con_copy, int nap, con_info &info);
 	long double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad); // x.sixe = d = b.size
 	bool operator()(const Eigen::VectorXd &x, Eigen::VectorXd &f, Eigen::MatrixXd &fprime); // x.size = d = b.size
-	double clPLrad::score(con_info &info, std::vector<double> &pl_score);
+	double score(con_info &info, std::vector<double> &pl_score);
 	//void operator()(std::vector<double> &mean);
 	void mean(std::vector<double> &mea);
 	void visualize(int n, int m = 0);
@@ -799,3 +799,5 @@ void create_boards(voro::container_poly &conp, std::vector<point> &normals, std:
 bool read_ns(const char* fname, std::vector<point> &vec);
 bool read_vfs(const char* fname, std::vector<double> &vec);
 void create_image_sub(voro::container_poly &con, std::vector<std::vector<std::vector<int>>> &im, std::vector<point> &normals, std::vector<std::vector<board>> &boards);
+void board_stats(voro::container_poly &conp, std::vector<std::vector<board>> &boards, std::vector<point> &ns, std::vector<double> &a, const char* con_out);
+
