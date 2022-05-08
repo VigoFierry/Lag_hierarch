@@ -134,7 +134,7 @@ int main()
 
 	if (nname[0] == '\0') { 
 		ns.resize(n); 
-		if (rand_ns) { for (i = 0; i < n; i++) { ns[i].x = uniform(0,1); ns[i].y = uniform(0, 1); ns[i].z = uniform(0, 1); } }
+		if (rand_ns) { for (i = 0; i < n; i++) { sphere_uniform(ns[i].x, ns[i].y, ns[i].z); } }
 		else { for (i = 0; i < n; i++) { ns[i] = nol; } }
 	}
 	else {
@@ -406,6 +406,12 @@ int main()
 	
 
 	// Geometric characteristics of boards ---------------------------------------------------------------------------------------------
+	// there are two options:
+	//	1. all available boards' characteristics are written into the file 'boards_stats"".txt', 
+	//	   where ending "" can be specified in a call of the function board_stats
+	board_stats(conp, boards, ns, a, "");
+	
+	//	2. chosen geometric characteristics (coded by numbers 1-6) are computed and stored into vector "chars"
 	std::vector<std::vector<std::vector<double>>> chars; // vector for storing characteristics of boards for each grain
 	chars.resize(n);
 	for (i = 0; i < n; i++) {
